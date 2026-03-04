@@ -277,13 +277,56 @@ let confirmCallback = null;
 function save() {
   try { localStorage.setItem("tn_v6", JSON.stringify(trades)); } catch(e) {}
 }
+function normalizeTrade(t) {
+  // 旧バージョンとの互換性のため、欠損フィールドをデフォルト値で補完
+  return {
+    id:          t.id          ?? Date.now(),
+    code:        t.code        ?? '',
+    name:        t.name        ?? '',
+    per:         t.per         ?? '',
+    pbr:         t.pbr         ?? '',
+    dividend:    t.dividend    ?? '',
+    shareholder: t.shareholder ?? '',
+    memo:        t.memo        ?? '',
+    purchases:   (t.purchases  ?? []).map(normalizeRecord),
+    sales:       (t.sales      ?? []).map(normalizeRecord),
+  };
+}
+function normalizeRecord(r) {
+  return {
+    id:          r.id          ?? Date.now(),
+    date:        r.date        ?? today(),
+    price:       r.price       ?? '',
+    qty:         r.qty         ?? '',
+    fee:         r.fee         ?? '',
+    reason:      r.reason      ?? '',
+    per:         r.per         ?? '',
+    pbr:         r.pbr         ?? '',
+    dividend:    r.dividend    ?? '',
+    shareholder: r.shareholder ?? '',
+    newsUrls:    Array.isArray(r.newsUrls) ? r.newsUrls : [''],
+    newsImages:  Array.isArray(r.newsImages) ? r.newsImages : [],
+  };
+}
 function load() {
-  try {
-    const s = localStorage.getItem("tn_v6");
-    trades = s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEMO));
-  } catch(e) {
-    trades = JSON.parse(JSON.stringify(DEMO));
+  // tn_v6 → tn_v5 → tn_trades の順に探してデータを引き継ぐ
+  const keys = ["tn_v6", "tn_v5", "tn_trades", "tradenote"];
+  for (const key of keys) {
+    try {
+      const s = localStorage.getItem(key);
+      if (!s) continue;
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        trades = parsed.map(normalizeTrade);
+        // 古いキーのデータなら tn_v6 に移行保存
+        if (key !== "tn_v6") save();
+        console.log(`Loaded from: ${key}`);
+        return;
+      }
+    } catch(e) { continue; }
   }
+  // どのキーにもデータがない場合はデモデータ
+  trades = JSON.parse(JSON.stringify(DEMO));
 }
 
 // ════════════════════════════════════
@@ -294,7 +337,9 @@ function calcPnL(trade) {
   const st = trade.sales.reduce((s,p)=>s+(+p.price||0)*(+p.qty||0)-(+p.fee||0),0);
   const bq = trade.purchases.reduce((s,p)=>s+(+p.qty||0),0);
   const sq = trade.sales.reduce((s,p)=>s+(+p.qty||0),0);
-  return {pnl:st-bt, realized:sq>0, buyQty:bq, sellQty:sq, buyTotal:bt, sellTotal:st};
+  const pnl=st-bt;
+  const pnlPct=bt>0?(pnl/bt*100):0;
+  return {pnl, pnlPct, realized:sq>0, buyQty:bq, sellQty:sq, buyTotal:bt, sellTotal:st};
 }
 
 // ════════════════════════════════════
@@ -348,10 +393,11 @@ function renderList() {
     return;
   }
   el.innerHTML = trades.map(t=>{
-    const {pnl,realized,buyQty,sellQty}=calcPnL(t);
+    const {pnl,pnlPct,realized,buyQty,sellQty}=calcPnL(t);
     const sc=!realized?'var(--yellow)':pnl>=0?'var(--green)':'var(--red)';
     const statusText=!realized?'保有中':pnl>=0?'利確':'損切';
     const pnlText=realized?(pnl>=0?'+':'')+pnl.toLocaleString()+'円':'未売却';
+    const pnlPctText=realized?(pnlPct>=0?'+':'')+pnlPct.toFixed(1)+'%':'';
     const pnlColor=realized?(pnl>=0?'var(--green)':'var(--red)'):'var(--sub)';
     return `<div class="trade-row row btn-tap" onclick="openDetail(${t.id})">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
@@ -363,7 +409,7 @@ function renderList() {
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center${t.memo?';margin-bottom:4px':''}">
         <span style="font-size:12px;color:var(--sub)">購入 ${buyQty}株　売却 ${sellQty}株</span>
-        <span style="font-size:${realized?15:12}px;font-weight:800;color:${pnlColor}">${pnlText}</span>
+        <span style="font-size:${realized?15:12}px;font-weight:800;color:${pnlColor}">${pnlText}${pnlPctText?` <span style="font-size:11px;font-weight:700;opacity:.85">(${pnlPctText})</span>`:''}</span>
       </div>
       ${t.memo?`<div class="trade-memo">${esc(t.memo)}</div>`:''}
     </div>`;
@@ -447,7 +493,7 @@ function openDetail(id) {
 function renderDetail() {
   const trade = trades.find(t=>t.id===activeId);
   if(!trade) return;
-  const {pnl,realized,buyTotal,sellTotal,buyQty,sellQty}=calcPnL(trade);
+  const {pnl,pnlPct,realized,buyTotal,sellTotal,buyQty,sellQty}=calcPnL(trade);
 
   // ヘッダー
   document.getElementById('detail-title').innerHTML =
@@ -458,7 +504,8 @@ function renderDetail() {
     document.getElementById('detail-pnl-badge').innerHTML =
       `<div style="background:${pnl>=0?'#071a0f':'#1a0709'};border:1px solid ${pnl>=0?'#1e4030':'#501a1a'};border-radius:7px;padding:4px 10px;text-align:center">
         <div style="font-size:9px;color:var(--sub)">損益</div>
-        <div style="font-size:14px;font-weight:800;color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}${pnl.toLocaleString()}円</div>
+        <div style="font-size:13px;font-weight:800;color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}${pnl.toLocaleString()}円</div>
+        <div style="font-size:10px;font-weight:700;color:${pnl>=0?'var(--green)':'var(--red)'};opacity:.85">(${pnlPct>=0?'+':''}${pnlPct.toFixed(1)}%)</div>
       </div>`;
   } else {
     document.getElementById('detail-pnl-badge').innerHTML='';
@@ -469,7 +516,7 @@ function renderDetail() {
   document.getElementById('dtab-sell').textContent=`売却(${trade.sales.length})`;
 
   // 基本タブ
-  document.getElementById('detail-basic').innerHTML = renderBasicTab(trade,{pnl,realized,buyTotal,sellTotal,buyQty,sellQty});
+  document.getElementById('detail-basic').innerHTML = renderBasicTab(trade,{pnl,pnlPct,realized,buyTotal,sellTotal,buyQty,sellQty});
   // 購入タブ
   document.getElementById('detail-buy').innerHTML = renderTCardsTab(trade,'buy');
   // 売却タブ
@@ -478,7 +525,7 @@ function renderDetail() {
   switchDetailTab(currentDetailTab);
 }
 
-function renderBasicTab(trade,{pnl,realized,buyTotal,sellTotal,buyQty,sellQty}) {
+function renderBasicTab(trade,{pnl,pnlPct,realized,buyTotal,sellTotal,buyQty,sellQty}) {
   const hasRecords = trade.purchases.length>0||trade.sales.length>0;
   return `
     <div style="display:flex;flex-direction:column;gap:14px">
@@ -498,6 +545,7 @@ function renderBasicTab(trade,{pnl,realized,buyTotal,sellTotal,buyQty,sellQty}) 
         ${realized?`<div class="pnl-box" style="background:${pnl>=0?'#071a0f':'#1a0709'};border:1px solid ${pnl>=0?'#1e4030':'#501a1a'}">
           <div class="pnl-label">実現損益（手数料込み）</div>
           <div class="pnl-val" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}${pnl.toLocaleString()} 円</div>
+          <div style="font-size:14px;font-weight:700;color:${pnl>=0?'var(--green)':'var(--red)'};opacity:.85;margin-top:2px">(${pnlPct>=0?'+':''}${pnlPct.toFixed(1)}%)</div>
         </div>`:''}
       `:''}
     </div>
@@ -777,7 +825,7 @@ function doRestore() {
   try {
     const parsed=JSON.parse(val);
     if(!Array.isArray(parsed)) throw new Error();
-    trades=parsed; save(); closeRestore();
+    trades=parsed.map(normalizeTrade); save(); closeRestore();
     renderList(); if(currentMainTab==='pf') renderPortfolio();
   } catch(e) {
     const errEl=document.getElementById('restore-err');
