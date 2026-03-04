@@ -420,7 +420,7 @@ function renderList() {
 // ポートフォリオ
 // ════════════════════════════════════
 function renderPortfolio() {
-  const pfData = trades.map(t=>{const{buyTotal}=calcPnL(t);return{name:t.name||t.code||'不明',value:buyTotal};}).filter(d=>d.value>0);
+  const pfData = trades.map(t=>{const{buyQty,sellQty,buyTotal}=calcPnL(t);const holdQty=buyQty-sellQty;if(holdQty<=0)return null;const avgPrice=buyQty>0?buyTotal/buyQty:0;const holdVal=avgPrice*holdQty;return{name:t.name||t.code||'不明',value:holdVal};}).filter(d=>d&&d.value>0);
   const el = document.getElementById('tab-pf-content');
   if(pfData.length===0){
     el.innerHTML='<div class="pf-empty"><div style="font-size:48px;margin-bottom:12px">🥧</div><div style="font-size:14px;color:var(--sub)">購入記録を入力するとグラフが表示されます</div></div>';
