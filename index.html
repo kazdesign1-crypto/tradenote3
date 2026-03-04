@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TRADENOTE">
+<meta name="theme-color" content="#080d16">
+<title>TRADENOTE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#080d16;color:#e8f0ff;font-family:'Segoe UI','Hiragino Kaku Gothic ProN',sans-serif;-webkit-text-size-adjust:100%}
+:root{--bg:#080d16;--card:#0d1422;--border:#1a2535;--blue:#4a8ef0;--green:#45d485;--red:#e05060;--yellow:#f0a832;--text:#e8f0ff;--sub:#4a6080}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#1a2535;border-radius:2px}
+input,textarea,select{outline:none;-webkit-appearance:none;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;width:100%;transition:border-color .15s}
+input:focus,textarea:focus{border-color:var(--blue)}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.5) sepia(1) saturate(2) hue-rotate(180deg)}
+textarea{resize:vertical}
+button{cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+a{-webkit-tap-highlight-color:transparent}
+.screen{display:none;min-height:100vh;padding-bottom:72px}
+.screen.active{display:block}
+.row{transition:background .12s;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.row:active{background:#111a2a!important}
+.btn-tap{-webkit-tap-highlight-color:transparent}
+/* ── ヘッダー ── */
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:0 14px;position:sticky;top:0;z-index:50;height:52px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.logo span{color:var(--blue)}
+/* ── ボトムナビ ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;z-index:50}
+.nav-btn{flex:1;background:none;border:none;padding:10px 0 8px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.nav-btn .nav-icon{font-size:22px}
+.nav-btn .nav-label{font-size:11px;font-weight:700;color:var(--sub);transition:color .15s}
+.nav-btn.active .nav-label{color:var(--blue)}
+.nav-indicator{width:18px;height:2px;background:var(--blue);border-radius:1px;margin-top:2px;opacity:0;transition:opacity .15s}
+.nav-btn.active .nav-indicator{opacity:1}
+/* ── カード ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 14px}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px}
+.stat-label{font-size:10px;color:var(--sub);margin-bottom:4px;font-weight:600}
+.stat-val{font-size:14px;font-weight:800}
+/* ── バックアップボタン ── */
+.backup-row{display:flex;gap:8px;margin-bottom:12px}
+.backup-btn{flex:1;background:none;border:1px solid #1e2d40;color:#5a7090;border-radius:8px;padding:9px 0;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px}
+/* ── 銘柄行 ── */
+.trade-row{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:8px}
+.trade-code{font-size:16px;font-weight:800;color:var(--blue)}
+.trade-name{font-size:13px;color:#a0b4cc;font-weight:600}
+.trade-status{font-size:11px;font-weight:700;border-radius:5px;padding:2px 8px}
+.trade-memo{font-size:11px;color:#5a7090;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px}
+/* ── セクション見出し ── */
+.sec{font-size:11px;color:var(--blue);font-weight:800;letter-spacing:1px;padding-bottom:7px;border-bottom:1px solid var(--border);margin-bottom:12px}
+/* ── タブ ── */
+.tabs{background:var(--card);border-bottom:1px solid var(--border);display:flex}
+.tab-btn{flex:1;padding:11px 4px;font-size:13px;font-weight:700;color:var(--sub);border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-left:none;border-right:none;border-top:none;font-family:inherit;transition:color .15s,border-color .15s}
+.tab-btn.active{color:#fff;border-bottom-color:#4a8ef0}
+/* ── フォームラベル ── */
+.lbl{font-size:12px;color:var(--sub);margin-bottom:5px;display:block;font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* ── サマリーカード ── */
+.summary-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+.summary-label{font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:600}
+.summary-val{font-size:15px;font-weight:800}
+/* ── 損益ボックス ── */
+.pnl-box{border-radius:10px;padding:14px 16px}
+.pnl-label{font-size:11px;color:var(--sub);margin-bottom:4px;font-weight:600}
+.pnl-val{font-size:26px;font-weight:800}
+/* ── 購入/売却カード ── */
+.tcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+.tcard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.amount-row{background:var(--bg);border-radius:7px;padding:9px 12px;margin-bottom:10px;display:flex;justify-content:space-between;font-size:13px}
+/* ── トグルボタン ── */
+.toggle-btn{width:100%;background:none;border:1px solid var(--border);color:#4a6080;border-radius:8px;padding:9px 12px;font-family:inherit;font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center;transition:border-color .15s,color .15s}
+.toggle-btn.open{border-color:#4a8ef055;color:var(--blue)}
+.toggle-arrow{font-size:16px;line-height:1;transition:transform .2s;display:inline-block}
+.toggle-btn.open .toggle-arrow{transform:rotate(180deg)}
+.toggle-content{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:6px}
+/* ── 追加ボタン ── */
+.add-btn{background:#0d1422;border:1px dashed #253545;color:var(--blue);border-radius:8px;padding:12px;width:100%;font-family:inherit;font-size:14px;font-weight:700}
+.add-btn-sm{background:none;border:1px dashed #1a2535;color:var(--blue);border-radius:6px;padding:7px 12px;font-family:inherit;font-size:13px}
+/* ── URL行 ── */
+.url-row{display:flex;gap:5px;align-items:center;margin-bottom:7px}
+/* ── 画像グリッド ── */
+.img-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px}
+.img-card{background:var(--card);border-radius:7px;overflow:hidden;border:1px solid var(--border)}
+.img-card img{width:100%;display:block}
+.img-card-foot{display:flex;justify-content:space-between;align-items:center;padding:5px 9px}
+/* ── ポートフォリオ ── */
+.pf-empty{text-align:center;padding:60px 0}
+.pf-legend{display:flex;flex-wrap:wrap;gap:5px 10px;justify-content:center;padding:0 8px;margin-top:8px}
+.legend-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.pf-bar-row{margin-bottom:11px}
+.pf-bar-bg{background:#1a2535;border-radius:3px;height:5px}
+.pf-bar-fill{height:100%;border-radius:3px;transition:width .4s ease}
+/* ── モーダル ── */
+.modal-overlay{position:fixed;inset:0;background:#000000cc;z-index:300;display:flex;align-items:center;justify-content:center;padding:0 24px}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:300px}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:8px}
+.modal-sub{font-size:13px;color:var(--sub);margin-bottom:22px}
+.modal-btns{display:flex;gap:10px}
+/* ── バックアップモーダル ── */
+.bk-overlay{position:fixed;inset:0;background:#000000dd;z-index:300;display:flex;flex-direction:column;padding:16px}
+.bk-modal{background:var(--card);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;max-height:90vh;overflow:hidden}
+.bk-header{padding:16px 16px 10px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0}
+.bk-title{font-size:15px;font-weight:700;margin-bottom:3px}
+.bk-sub{font-size:12px;color:var(--sub)}
+.bk-close{background:none;border:none;color:var(--sub);font-size:22px;line-height:1;padding:2px 4px;flex-shrink:0}
+.bk-info{padding:10px 14px;flex-shrink:0}
+.bk-info-box{font-size:12px;color:#7a9ac0;background:#0a1520;border-radius:8px;padding:10px 12px;line-height:1.8}
+.bk-textarea{flex:1;background:#050a10;border:none;border-top:1px solid var(--border);color:#4a8060;font-family:monospace;font-size:10px;padding:12px;resize:none;min-height:100px;max-height:220px;outline:none}
+.bk-footer{padding:12px 14px;display:flex;gap:10px;flex-shrink:0;border-top:1px solid var(--border)}
+/* SVG パイチャート */
+.pie-container{width:100%;display:flex;justify-content:center;margin:8px 0}
+/* ── 詳細ヘッダー ── */
+.detail-header{background:var(--card);border-bottom:1px solid var(--border);padding:0 12px;position:sticky;top:0;z-index:50;height:52px;display:flex;align-items:center;gap:8px}
+.detail-back{background:none;border:1px solid var(--border);color:var(--blue);border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;font-weight:700;flex-shrink:0}
+.detail-pnl{border-radius:7px;padding:4px 10px;text-align:center;flex-shrink:0}
+.detail-del{background:none;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;font-weight:700;flex-shrink:0}
+/* アニメ */
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .18s ease}
+</style>
+</head>
+<body>
+
+<!-- ========== 一覧画面 ========== -->
+<div id="screen-list" class="screen active">
+  <div class="header">
+    <div class="logo">TRADE<span>NOTE</span></div>
+    <button class="btn-tap" onclick="newTrade()" style="background:var(--blue);color:#fff;border:none;border-radius:7px;padding:7px 15px;font-size:14px;font-weight:700">＋ 新規</button>
+  </div>
+  <div style="padding:12px 12px 0">
+    <div class="stat-grid" id="stat-grid"></div>
+    <div class="backup-row">
+      <button class="backup-btn btn-tap" onclick="openBackup()"><span>📋</span> バックアップ</button>
+      <button class="backup-btn btn-tap" onclick="openRestore()"><span>📥</span> 復元する</button>
+    </div>
+    <div id="tab-list-content"></div>
+    <div id="tab-pf-content" style="display:none"></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active btn-tap" id="nav-list" onclick="switchMainTab('list')">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">一覧</span>
+      <div class="nav-indicator"></div>
+    </button>
+    <button class="nav-btn btn-tap" id="nav-pf" onclick="switchMainTab('pf')">
+      <span class="nav-icon">🥧</span>
+      <span class="nav-label">PF</span>
+      <div class="nav-indicator"></div>
+    </button>
+  </div>
+</div>
+
+<!-- ========== 詳細画面 ========== -->
+<div id="screen-detail" class="screen">
+  <div class="detail-header">
+    <button class="detail-back btn-tap" onclick="goBack()">← 戻る</button>
+    <div style="flex:1;min-width:0;overflow:hidden" id="detail-title"></div>
+    <div id="detail-pnl-badge"></div>
+    <button class="detail-del btn-tap" style="border:1px solid #e0506055;color:var(--red)" onclick="confirmDeleteTrade()">削除</button>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active btn-tap" id="dtab-basic" onclick="switchDetailTab('basic')">基本</button>
+    <button class="tab-btn btn-tap" id="dtab-buy" onclick="switchDetailTab('buy')">購入(0)</button>
+    <button class="tab-btn btn-tap" id="dtab-sell" onclick="switchDetailTab('sell')">売却(0)</button>
+  </div>
+  <div style="padding:14px 12px">
+    <div id="detail-basic"></div>
+    <div id="detail-buy" style="display:none"></div>
+    <div id="detail-sell" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ========== バックアップモーダル ========== -->
+<div id="modal-backup" style="display:none" class="bk-overlay">
+  <div class="bk-modal">
+    <div class="bk-header">
+      <div><div class="bk-title">📋 バックアップ</div><div class="bk-sub">「コピーする」を押してどこかに貼り付けて保存してください</div></div>
+      <button class="bk-close btn-tap" onclick="closeBackup()">×</button>
+    </div>
+    <div class="bk-info">
+      <div class="bk-info-box">
+        <div>① 「コピーする」ボタンを押す</div>
+        <div>② NotionやGoogleドキュメント、メモ帳などに貼り付ける</div>
+        <div>③ ファイルを保存すればバックアップ完了</div>
+      </div>
+    </div>
+    <textarea class="bk-textarea" id="backup-text" readonly></textarea>
+    <div class="bk-footer">
+      <button onclick="closeBackup()" style="flex:1;background:none;border:1px solid var(--border);color:var(--sub);border-radius:8px;padding:11px;font-family:inherit;font-size:14px;font-weight:700">閉じる</button>
+      <button id="copy-btn" onclick="doCopy()" style="flex:2;background:var(--blue);border:none;color:#fff;border-radius:8px;padding:11px;font-family:inherit;font-size:14px;font-weight:700;transition:background .2s">コピーする</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 復元モーダル ========== -->
+<div id="modal-restore" style="display:none" class="bk-overlay">
+  <div class="bk-modal">
+    <div class="bk-header">
+      <div><div class="bk-title">📥 復元する</div><div class="bk-sub">バックアップしたJSONを貼り付けてください</div></div>
+      <button class="bk-close btn-tap" onclick="closeRestore()">×</button>
+    </div>
+    <div class="bk-info">
+      <div style="font-size:12px;color:var(--red);background:#1a0709;border-radius:8px;padding:10px 12px;line-height:1.8;border:1px solid #501a1a">
+        ⚠️ 現在のデータはすべて置き換えられます。事前にバックアップを取ってください。
+      </div>
+    </div>
+    <textarea class="bk-textarea" id="restore-text" placeholder="バックアップしたJSONをここに貼り付け..." style="color:#7ab8ff" oninput="onRestoreInput()"></textarea>
+    <div id="restore-err" style="padding:0;font-size:12px;color:var(--red);flex-shrink:0;display:none"></div>
+    <div class="bk-footer">
+      <button onclick="closeRestore()" style="flex:1;background:none;border:1px solid var(--border);color:var(--sub);border-radius:8px;padding:11px;font-family:inherit;font-size:14px;font-weight:700">キャンセル</button>
+      <button id="restore-btn" onclick="doRestore()" style="flex:2;background:#1a3a2a;border:none;color:#fff;border-radius:8px;padding:11px;font-family:inherit;font-size:14px;font-weight:700;cursor:default">復元する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 汎用確認モーダル ========== -->
+<div id="modal-confirm" style="display:none" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title" id="confirm-msg"></div>
+    <div class="modal-sub">この操作は元に戻せません。</div>
+    <div class="modal-btns">
+      <button onclick="closeConfirm()" style="flex:1;background:none;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:11px;font-family:inherit;font-size:14px;font-weight:700">キャンセル</button>
+      <button id="confirm-ok" style="flex:1;background:var(--red);border:none;color:#fff;border-radius:8px;padding:11px;font-family:inherit;font-size:14px;font-weight:700">削除する</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== パイチャートツールチップ ========== -->
+<div id="pie-tooltip" style="display:none;position:fixed;z-index:200;background:#0d1422;border:1px solid #4a8ef0;border-radius:8px;padding:7px 12px;pointer-events:none;font-size:12px;font-weight:700;color:#e8f0ff;white-space:nowrap;box-shadow:0 4px 16px #00000088;transition:opacity .1s">
+  <span id="pie-tip-dot" style="display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle"></span>
+  <span id="pie-tip-text"></span>
+</div>
+
+<script>
+// ════════════════════════════════════
+// データ
+// ════════════════════════════════════
+const COLORS = ["#4a8ef0","#45d485","#f0a832","#e05060","#a855f7","#06b6d4","#f97316","#ec4899"];
+const today = () => new Date().toISOString().slice(0,10);
+const uid = () => Date.now() + Math.random()*1000|0;
+
+const DEMO = [
+  {id:1001,code:"7203",name:"トヨタ自動車",per:"8.2",pbr:"1.1",dividend:"2.3",shareholder:"なし",memo:"長期保有銘柄。HV・EV両刀で安定成長。円安メリットも大きい。",
+   purchases:[{id:2001,date:"2024-06-10",price:"3280",qty:"100",fee:"550",reason:"EV戦略への懸念で株価下落中だがHV販売は絶好調。PBR1倍割れで割安と判断。",newsUrls:["https://global.toyota"],newsImages:[]},{id:2002,date:"2024-10-15",price:"2950",qty:"100",fee:"550",reason:"更なる下落で買い増し。",newsUrls:[""],newsImages:[]}],
+   sales:[{id:2003,date:"2025-02-20",price:"3850",qty:"100",fee:"550",reason:"目標株価に到達。半分利確。",newsUrls:[""],newsImages:[]}]},
+  {id:1002,code:"6861",name:"キーエンス",per:"45.2",pbr:"7.3",dividend:"0.2",shareholder:"なし",memo:"日本最高クラスの営業利益率。FA・自動化需要の長期トレンド受益。",
+   purchases:[{id:2004,date:"2024-08-20",price:"57800",qty:"10",fee:"550",reason:"製造業の自動化需要は10年単位で続く。高PERだが成長の質が高く少量保有で長期運用。",newsUrls:[""],newsImages:[]}],sales:[]},
+  {id:1003,code:"8306",name:"三菱UFJ FG",per:"10.5",pbr:"0.9",dividend:"3.1",shareholder:"なし",memo:"日銀金利正常化で恩恵大。次の押し目で再エントリー予定。",
+   purchases:[{id:2005,date:"2024-03-15",price:"1420",qty:"200",fee:"550",reason:"金利上昇トレンドで銀行株に強い追い風。",newsUrls:[""],newsImages:[]}],
+   sales:[{id:2006,date:"2024-11-08",price:"1780",qty:"200",fee:"550",reason:"25%超の利益確定。全売却。",newsUrls:[""],newsImages:[]}]},
+  {id:1004,code:"9433",name:"KDDI",per:"14.3",pbr:"2.1",dividend:"3.4",shareholder:"100株以上：au PAYマーケットクーポン3,000円相当（年2回）",memo:"25年連続増配の安定高配当株。優待も充実でインカム目的の中核銘柄。",
+   purchases:[{id:2007,date:"2024-05-07",price:"4380",qty:"100",fee:"550",reason:"連続増配と優待を評価。",newsUrls:[""],newsImages:[]}],sales:[]},
+  {id:1005,code:"9984",name:"ソフトバンクグループ",per:"—",pbr:"1.8",dividend:"0.5",shareholder:"なし",memo:"ハイリスク枠。ARM株価連動で大きく動く。損切ライン7,500円厳守。",
+   purchases:[{id:2008,date:"2024-09-03",price:"8820",qty:"50",fee:"550",reason:"AI・半導体投資加速フェーズ。ARM上場後の回復期待で打診買い。",newsUrls:[""],newsImages:[]}],sales:[]},
+];
+
+let trades = [];
+let activeId = null;
+let currentDetailTab = "basic";
+let currentMainTab = "list";
+let confirmCallback = null;
+
+// ════════════════════════════════════
+// 永続化
+// ════════════════════════════════════
+function save() {
+  try { localStorage.setItem("tn_v6", JSON.stringify(trades)); } catch(e) {}
+}
+function load() {
+  try {
+    const s = localStorage.getItem("tn_v6");
+    trades = s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEMO));
+  } catch(e) {
+    trades = JSON.parse(JSON.stringify(DEMO));
+  }
+}
+
+// ════════════════════════════════════
+// 計算
+// ════════════════════════════════════
+function calcPnL(trade) {
+  const bt = trade.purchases.reduce((s,p)=>s+(+p.price||0)*(+p.qty||0)+(+p.fee||0),0);
+  const st = trade.sales.reduce((s,p)=>s+(+p.price||0)*(+p.qty||0)-(+p.fee||0),0);
+  const bq = trade.purchases.reduce((s,p)=>s+(+p.qty||0),0);
+  const sq = trade.sales.reduce((s,p)=>s+(+p.qty||0),0);
+  return {pnl:st-bt, realized:sq>0, buyQty:bq, sellQty:sq, buyTotal:bt, sellTotal:st};
+}
+
+// ════════════════════════════════════
+// 画面切替
+// ════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('screen-'+id);
+  el.classList.add('active');
+  el.classList.add('fade-in');
+  setTimeout(()=>el.classList.remove('fade-in'),200);
+  window.scrollTo(0,0);
+}
+
+function switchMainTab(tab) {
+  currentMainTab = tab;
+  document.getElementById('tab-list-content').style.display = tab==='list'?'':'none';
+  document.getElementById('tab-pf-content').style.display = tab==='pf'?'':'none';
+  ['list','pf'].forEach(t=>{
+    const btn = document.getElementById('nav-'+t);
+    btn.classList.toggle('active', t===tab);
+  });
+  if(tab==='pf') renderPortfolio();
+}
+
+function switchDetailTab(tab) {
+  currentDetailTab = tab;
+  ['basic','buy','sell'].forEach(t=>{
+    document.getElementById('detail-'+t).style.display = t===tab?'':'none';
+    document.getElementById('dtab-'+t).classList.toggle('active', t===tab);
+  });
+}
+
+// ════════════════════════════════════
+// 一覧レンダリング
+// ════════════════════════════════════
+function renderList() {
+  // サマリー
+  const totalPnl = trades.reduce((s,t)=>{ const {pnl,realized}=calcPnL(t); return realized?s+pnl:s; },0);
+  const totalTx = trades.reduce((s,t)=>s+t.purchases.length+t.sales.length,0);
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">銘柄数</div><div class="stat-val">${trades.length}銘柄</div></div>
+    <div class="stat-card"><div class="stat-label">実現損益</div><div class="stat-val" style="color:${totalPnl>=0?'var(--green)':'var(--red)'}">${totalPnl>=0?'+':''}${totalPnl.toLocaleString()}円</div></div>
+    <div class="stat-card"><div class="stat-label">取引件数</div><div class="stat-val">${totalTx}件</div></div>
+  `;
+
+  // リスト
+  const el = document.getElementById('tab-list-content');
+  if(trades.length===0) {
+    el.innerHTML='<div style="text-align:center;padding:60px 0"><div style="font-size:48px;margin-bottom:12px">📋</div><div style="font-size:14px;color:var(--sub)">＋ 新規ボタンで銘柄を追加してください</div></div>';
+    return;
+  }
+  el.innerHTML = trades.map(t=>{
+    const {pnl,realized,buyQty,sellQty}=calcPnL(t);
+    const sc=!realized?'var(--yellow)':pnl>=0?'var(--green)':'var(--red)';
+    const statusText=!realized?'保有中':pnl>=0?'利確':'損切';
+    const pnlText=realized?(pnl>=0?'+':'')+pnl.toLocaleString()+'円':'未売却';
+    const pnlColor=realized?(pnl>=0?'var(--green)':'var(--red)'):'var(--sub)';
+    return `<div class="trade-row row btn-tap" onclick="openDetail(${t.id})">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <div style="display:flex;align-items:baseline;gap:7px">
+          <span class="trade-code">${esc(t.code)||'----'}</span>
+          <span class="trade-name">${esc(t.name)}</span>
+        </div>
+        <span class="trade-status" style="color:${sc};background:${sc}20">${statusText}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center${t.memo?';margin-bottom:4px':''}">
+        <span style="font-size:12px;color:var(--sub)">購入 ${buyQty}株　売却 ${sellQty}株</span>
+        <span style="font-size:${realized?15:12}px;font-weight:800;color:${pnlColor}">${pnlText}</span>
+      </div>
+      ${t.memo?`<div class="trade-memo">${esc(t.memo)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════
+// ポートフォリオ
+// ════════════════════════════════════
+function renderPortfolio() {
+  const pfData = trades.map(t=>{const{buyTotal}=calcPnL(t);return{name:t.name||t.code||'不明',value:buyTotal};}).filter(d=>d.value>0);
+  const el = document.getElementById('tab-pf-content');
+  if(pfData.length===0){
+    el.innerHTML='<div class="pf-empty"><div style="font-size:48px;margin-bottom:12px">🥧</div><div style="font-size:14px;color:var(--sub)">購入記録を入力するとグラフが表示されます</div></div>';
+    return;
+  }
+  const total = pfData.reduce((s,d)=>s+d.value,0);
+  // SVGパイチャート
+  const R=90, cx=120, cy=110, ir=38;
+  let startAngle=-Math.PI/2;
+  const slices = pfData.map((d,i)=>{
+    const angle=(d.value/total)*Math.PI*2;
+    const x1=cx+R*Math.cos(startAngle), y1=cy+R*Math.sin(startAngle);
+    const x2=cx+R*Math.cos(startAngle+angle), y2=cy+R*Math.sin(startAngle+angle);
+    const ix1=cx+ir*Math.cos(startAngle), iy1=cy+ir*Math.sin(startAngle);
+    const ix2=cx+ir*Math.cos(startAngle+angle), iy2=cy+ir*Math.sin(startAngle+angle);
+    const large=angle>Math.PI?1:0;
+    const path=`M${ix1},${iy1} L${x1},${y1} A${R},${R},0,${large},1,${x2},${y2} L${ix2},${iy2} A${ir},${ir},0,${large},0,${ix1},${iy1} Z`;
+    const pct=(d.value/total*100).toFixed(1);
+    const tipLabel=esc(d.name)+' '+pct+'% / '+d.value.toLocaleString()+'円';
+    const col=COLORS[i%COLORS.length];
+    startAngle+=angle;
+    return `<path d="${path}" fill="${col}" stroke="transparent" style="cursor:pointer;transition:opacity .15s"
+      onmouseover="pieHover(this,event,'${tipLabel}','${col}')"
+      onmousemove="pieMove(event)"
+      onmouseout="pieOut(this)"
+      ontouchstart="pieTouch(this,event,'${tipLabel}','${col}')"
+      ontouchend="pieOut(this)"/>`;
+  }).join('');
+  const legend = pfData.map((d,i)=>`<div style="display:flex;align-items:center;gap:5px;font-size:11px"><div class="legend-dot" style="background:${COLORS[i%COLORS.length]}"></div><span style="color:#8a9fc0">${esc(d.name)}</span></div>`).join('');
+  const bars = pfData.map((d,i)=>{
+    const pct=(d.value/total*100).toFixed(1);
+    return `<div class="pf-bar-row">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:6px"><div class="legend-dot" style="background:${COLORS[i%COLORS.length]}"></div><span style="font-size:13px;font-weight:700;color:#c0d0e8">${esc(d.name)}</span></div>
+        <span style="font-size:14px;font-weight:800">${pct}%</span>
+      </div>
+      <div class="pf-bar-bg"><div class="pf-bar-fill" style="width:${pct}%;background:${COLORS[i%COLORS.length]}"></div></div>
+      <div style="font-size:11px;color:var(--sub);margin-top:2px;text-align:right">${d.value.toLocaleString()}円</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 8px;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--sub);font-weight:600;margin-bottom:2px;padding-left:8px">投資額比率（購入総額ベース）</div>
+      <div class="pie-container">
+        <svg width="240" height="220" viewBox="0 0 240 220">${slices}</svg>
+      </div>
+      <div class="pf-legend">${legend}</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-size:12px;color:var(--sub);font-weight:600;margin-bottom:12px">銘柄別内訳</div>
+      ${bars}
+      <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;font-size:14px;font-weight:800">
+        <span>合計</span><span>${total.toLocaleString()}円</span>
+      </div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════
+// 詳細画面
+// ════════════════════════════════════
+function openDetail(id) {
+  activeId = id;
+  currentDetailTab = 'basic';
+  renderDetail();
+  showScreen('detail');
+}
+
+function renderDetail() {
+  const trade = trades.find(t=>t.id===activeId);
+  if(!trade) return;
+  const {pnl,realized,buyTotal,sellTotal,buyQty,sellQty}=calcPnL(trade);
+
+  // ヘッダー
+  document.getElementById('detail-title').innerHTML =
+    `<span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--blue)">${esc(trade.code)||'----'} </span>`+
+    (trade.name?`<span style="font-size:12px;color:var(--sub)">${esc(trade.name)}</span>`:'');
+
+  if(realized){
+    document.getElementById('detail-pnl-badge').innerHTML =
+      `<div style="background:${pnl>=0?'#071a0f':'#1a0709'};border:1px solid ${pnl>=0?'#1e4030':'#501a1a'};border-radius:7px;padding:4px 10px;text-align:center">
+        <div style="font-size:9px;color:var(--sub)">損益</div>
+        <div style="font-size:14px;font-weight:800;color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}${pnl.toLocaleString()}円</div>
+      </div>`;
+  } else {
+    document.getElementById('detail-pnl-badge').innerHTML='';
+  }
+
+  // タブラベル更新
+  document.getElementById('dtab-buy').textContent=`購入(${trade.purchases.length})`;
+  document.getElementById('dtab-sell').textContent=`売却(${trade.sales.length})`;
+
+  // 基本タブ
+  document.getElementById('detail-basic').innerHTML = renderBasicTab(trade,{pnl,realized,buyTotal,sellTotal,buyQty,sellQty});
+  // 購入タブ
+  document.getElementById('detail-buy').innerHTML = renderTCardsTab(trade,'buy');
+  // 売却タブ
+  document.getElementById('detail-sell').innerHTML = renderTCardsTab(trade,'sell');
+
+  switchDetailTab(currentDetailTab);
+}
+
+function renderBasicTab(trade,{pnl,realized,buyTotal,sellTotal,buyQty,sellQty}) {
+  const hasRecords = trade.purchases.length>0||trade.sales.length>0;
+  return `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="sec">銘柄情報</div>
+      <div class="grid2">
+        <div><label class="lbl">銘柄コード</label><input value="${esc(trade.code)}" placeholder="例: 7203" oninput="updTrade('code',this.value)"/></div>
+        <div><label class="lbl">企業名</label><input value="${esc(trade.name)}" placeholder="手動入力" oninput="updTrade('name',this.value)"/></div>
+      </div>
+      <div><label class="lbl">メモ</label><textarea style="min-height:100px" placeholder="投資メモ..." oninput="updTrade('memo',this.value)">${esc(trade.memo)}</textarea></div>
+      ${hasRecords?`
+        <div class="sec">サマリー</div>
+        <div class="grid2">
+          ${[['購入総額',buyTotal.toLocaleString()+'円'],['売却総額',sellTotal.toLocaleString()+'円'],['購入株数',buyQty+'株'],['売却株数',sellQty+'株']].map(([k,v])=>`
+            <div class="summary-card"><div class="summary-label">${k}</div><div class="summary-val">${v}</div></div>
+          `).join('')}
+        </div>
+        ${realized?`<div class="pnl-box" style="background:${pnl>=0?'#071a0f':'#1a0709'};border:1px solid ${pnl>=0?'#1e4030':'#501a1a'}">
+          <div class="pnl-label">実現損益（手数料込み）</div>
+          <div class="pnl-val" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}${pnl.toLocaleString()} 円</div>
+        </div>`:''}
+      `:''}
+    </div>
+  `;
+}
+
+function renderTCardsTab(trade, type) {
+  const isBuy = type==='buy';
+  const records = isBuy ? trade.purchases : trade.sales;
+  const addFn = isBuy ? 'addPurchase' : 'addSale';
+  const cards = records.map((r,i)=>renderTCard(r,i,isBuy)).join('');
+  return `<div style="display:flex;flex-direction:column;gap:0">${cards}<button class="add-btn btn-tap" onclick="${addFn}()">＋ ${isBuy?'購入':'売却'}記録を追加</button></div>`;
+}
+
+function renderTCard(item, index, isBuy) {
+  const amt=(+item.price||0)*(+item.qty||0);
+  const total=isBuy?amt+(+item.fee||0):amt-(+item.fee||0);
+  const col=isBuy?'var(--blue)':'#e07050';
+  const newsUrls=item.newsUrls||[''];
+  const newsImages=item.newsImages||[];
+  const type=isBuy?'purchases':'sales';
+  const amtRow=(item.price||item.qty)?`<div class="amount-row"><span style="color:var(--sub)">金額（${isBuy?'手数料込':'手数料控除'}）</span><span style="font-weight:800;font-size:14px">${total.toLocaleString()} 円</span></div>`:'';
+  const metricsSection=isBuy?`
+    <div style="margin-bottom:12px">
+      <button class="toggle-btn btn-tap" id="metrics-btn-${item.id}" onclick="toggleSection('metrics-${item.id}','metrics-btn-${item.id}')">
+        <span>📊 購入時の指標</span><span class="toggle-arrow">⌄</span>
+      </button>
+      <div id="metrics-${item.id}" class="toggle-content" style="display:none">
+        <div class="grid3" style="margin-bottom:10px">
+          ${[['per','PER（倍）'],['pbr','PBR（倍）'],['dividend','配当利回り（%）']].map(([k,l])=>`
+            <div><label class="lbl">${l}</label><input type="number" value="${esc(item[k]||'')}" placeholder="入力" oninput="updRecord('${type}','${item.id}','${k}',this.value)"/></div>
+          `).join('')}
+        </div>
+        <div><label class="lbl">株主優待</label><textarea style="min-height:66px" placeholder="優待内容..." oninput="updRecord('${type}','${item.id}','shareholder',this.value)">${esc(item.shareholder||'')}</textarea></div>
+      </div>
+    </div>`:'';
+  const urlRows=newsUrls.map((url,i)=>`
+    <div class="url-row">
+      <input style="flex:1;font-size:13px" value="${esc(url)}" placeholder="https://..." oninput="updNewsUrl('${type}','${item.id}',${i},this.value)"/>
+      ${url?`<a href="${esc(url)}" target="_blank" rel="noreferrer" style="color:var(--blue);font-size:14px;text-decoration:none;font-weight:700;flex-shrink:0">↗</a>`:''}
+      <button class="btn-tap" onclick="delNewsUrl('${type}','${item.id}',${i})" style="background:none;border:none;color:var(--sub);font-size:18px;line-height:1;flex-shrink:0">×</button>
+    </div>
+  `).join('');
+  const imgCards=newsImages.map(img=>`
+    <div class="img-card">
+      <img src="${img.data}" alt="${esc(img.name)}"/>
+      <div class="img-card-foot">
+        <span style="font-size:10px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">${esc(img.name)}</span>
+        <button class="btn-tap" onclick="delNewsImg('${type}','${item.id}','${img.id}')" style="background:none;border:none;color:var(--red);font-size:11px;font-weight:700">削除</button>
+      </div>
+    </div>
+  `).join('');
+  return `
+    <div class="tcard">
+      <div class="tcard-header">
+        <span style="font-size:13px;color:${col};font-weight:800">${isBuy?'📥 購入':'📤 売却'} #${index+1}</span>
+        <button class="btn-tap" onclick="confirmDeleteRecord('${type}','${item.id}',${index+1})" style="background:none;border:1px solid #e0506044;color:var(--red);border-radius:6px;padding:4px 10px;font-family:inherit;font-size:12px;font-weight:700">削除</button>
+      </div>
+      <div class="grid2" style="margin-bottom:9px">
+        <div><label class="lbl">日付</label><input type="date" value="${esc(item.date)}" oninput="updRecord('${type}','${item.id}','date',this.value)"/></div>
+        <div><label class="lbl">価格（円）</label><input type="number" value="${esc(item.price)}" placeholder="0" oninput="updRecord('${type}','${item.id}','price',this.value)"/></div>
+        <div><label class="lbl">枚数（株）</label><input type="number" value="${esc(item.qty)}" placeholder="0" oninput="updRecord('${type}','${item.id}','qty',this.value)"/></div>
+        <div><label class="lbl">手数料（円）</label><input type="number" value="${esc(item.fee)}" placeholder="0" oninput="updRecord('${type}','${item.id}','fee',this.value)"/></div>
+      </div>
+      ${amtRow}
+      ${metricsSection}
+      <div style="margin-bottom:12px">
+        <button class="toggle-btn btn-tap" id="reason-btn-${item.id}" onclick="toggleSection('reason-${item.id}','reason-btn-${item.id}')">
+          <span>${isBuy?'📝 購入理由・メモ':'📝 売却理由・メモ'}</span><span class="toggle-arrow">⌄</span>
+        </button>
+        <div id="reason-${item.id}" style="display:none;margin-top:6px">
+          <textarea style="min-height:85px" placeholder="${isBuy?'購入':'売却'}理由..." oninput="updRecord('${type}','${item.id}','reason',this.value)">${esc(item.reason||'')}</textarea>
+        </div>
+      </div>
+      <div>
+        <button class="toggle-btn btn-tap" id="news-btn-${item.id}" onclick="toggleSection('news-${item.id}','news-btn-${item.id}')">
+          <span>📰 参考ニュース</span><span class="toggle-arrow">⌄</span>
+        </button>
+        <div id="news-${item.id}" class="toggle-content" style="display:none">
+          <label class="lbl">参考URL</label>
+          <div style="margin-bottom:10px">${urlRows}
+            <button class="add-btn-sm btn-tap" onclick="addNewsUrl('${type}','${item.id}')">＋ URL追加</button>
+          </div>
+          <label class="lbl">ニュース画像</label>
+          <input type="file" accept="image/*" multiple id="img-input-${item.id}" style="display:none" onchange="handleImg('${type}','${item.id}',this)"/>
+          <button class="add-btn-sm btn-tap" style="width:100%;margin-bottom:${newsImages.length?8:0}px" onclick="document.getElementById('img-input-${item.id}').click()">＋ 画像アップロード</button>
+          ${newsImages.length>0?`<div class="img-grid">${imgCards}</div>`:''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════
+// データ更新ヘルパー
+// ════════════════════════════════════
+function getTrade() { return trades.find(t=>t.id===activeId); }
+
+function updTrade(key, val) {
+  const t = getTrade(); if(!t) return;
+  t[key]=val; save();
+  // ヘッダーだけ更新
+  const {pnl,realized}=calcPnL(t);
+  document.getElementById('detail-title').innerHTML =
+    `<span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--blue)">${esc(t.code)||'----'} </span>`+
+    (t.name?`<span style="font-size:12px;color:var(--sub)">${esc(t.name)}</span>`:'');
+}
+
+function updRecord(type, id, key, val) {
+  const t = getTrade(); if(!t) return;
+  const rec = t[type].find(r=>r.id==id); if(!rec) return;
+  rec[key]=val; save();
+  // 金額表示だけ再描画
+  if(['price','qty','fee'].includes(key)) {
+    const isBuy=type==='purchases';
+    const amt=(+rec.price||0)*(+rec.qty||0);
+    const total=isBuy?amt+(+rec.fee||0):amt-(+rec.fee||0);
+    const card = document.getElementById('amount-'+id);
+    if(card && (rec.price||rec.qty)){
+      card.innerHTML=`<span style="color:var(--sub)">金額（${isBuy?'手数料込':'手数料控除'}）</span><span style="font-weight:800;font-size:14px">${total.toLocaleString()} 円</span>`;
+      card.style.display='flex';
+    }
+  }
+}
+
+function updNewsUrl(type, id, idx, val) {
+  const t=getTrade(); if(!t) return;
+  const rec=t[type].find(r=>r.id==id); if(!rec) return;
+  const urls=[...(rec.newsUrls||[''])];
+  urls[idx]=val; rec.newsUrls=urls; save();
+}
+
+function delNewsUrl(type, id, idx) {
+  const t=getTrade(); if(!t) return;
+  const rec=t[type].find(r=>r.id==id); if(!rec) return;
+  let urls=(rec.newsUrls||['']).filter((_,i)=>i!==idx);
+  if(urls.length===0) urls=[''];
+  rec.newsUrls=urls; save();
+  renderDetail();
+}
+
+function addNewsUrl(type, id) {
+  const t=getTrade(); if(!t) return;
+  const rec=t[type].find(r=>r.id==id); if(!rec) return;
+  rec.newsUrls=[...(rec.newsUrls||['']), '']; save();
+  renderDetail();
+}
+
+function handleImg(type, id, input) {
+  const t=getTrade(); if(!t) return;
+  const rec=t[type].find(r=>r.id==id); if(!rec) return;
+  Array.from(input.files).forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      rec.newsImages=[...(rec.newsImages||[]),{id:uid(),name:f.name,data:ev.target.result}];
+      save(); renderDetail();
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function delNewsImg(type, id, imgId) {
+  const t=getTrade(); if(!t) return;
+  const rec=t[type].find(r=>r.id==id); if(!rec) return;
+  rec.newsImages=(rec.newsImages||[]).filter(x=>x.id!=imgId); save();
+  renderDetail();
+}
+
+// ════════════════════════════════════
+// 追加・削除
+// ════════════════════════════════════
+function newTrade() {
+  const t={id:uid(),code:'',name:'',per:'',pbr:'',dividend:'',shareholder:'',purchases:[],sales:[],memo:''};
+  trades.unshift(t); save();
+  openDetail(t.id);
+}
+
+function addPurchase() {
+  const t=getTrade(); if(!t) return;
+  t.purchases.push({id:uid(),date:today(),price:'',qty:'',fee:'',reason:'',per:'',pbr:'',dividend:'',shareholder:'',newsUrls:[''],newsImages:[]});
+  save(); renderDetail(); switchDetailTab('buy');
+}
+
+function addSale() {
+  const t=getTrade(); if(!t) return;
+  t.sales.push({id:uid(),date:today(),price:'',qty:'',fee:'',reason:'',newsUrls:[''],newsImages:[]});
+  save(); renderDetail(); switchDetailTab('sell');
+}
+
+function confirmDeleteRecord(type, id, num) {
+  const isBuy=type==='purchases';
+  openConfirm(`${isBuy?'購入':'売却'}記録 #${num} を削除しますか？`, ()=>{
+    const t=getTrade(); if(!t) return;
+    t[type]=t[type].filter(r=>r.id!=id); save();
+    renderDetail();
+    switchDetailTab(isBuy?'buy':'sell');
+  });
+}
+
+function confirmDeleteTrade() {
+  const t=getTrade(); if(!t) return;
+  openConfirm(`「${t.name||t.code||'この銘柄'}」を削除しますか？`, ()=>{
+    trades=trades.filter(t=>t.id!==activeId); save();
+    activeId=null; goBack();
+  });
+}
+
+function goBack() {
+  renderList();
+  showScreen('list');
+  if(currentMainTab==='pf') renderPortfolio();
+}
+
+// ════════════════════════════════════
+// トグル
+// ════════════════════════════════════
+function toggleSection(contentId, btnId) {
+  const content=document.getElementById(contentId);
+  const btn=document.getElementById(btnId);
+  if(!content||!btn) return;
+  const isOpen=content.style.display!=='none';
+  content.style.display=isOpen?'none':'';
+  btn.classList.toggle('open',!isOpen);
+}
+
+// ════════════════════════════════════
+// 確認モーダル
+// ════════════════════════════════════
+function openConfirm(msg, cb) {
+  document.getElementById('confirm-msg').textContent=msg;
+  confirmCallback=cb;
+  document.getElementById('confirm-ok').onclick=()=>{closeConfirm();cb();};
+  document.getElementById('modal-confirm').style.display='flex';
+}
+function closeConfirm() { document.getElementById('modal-confirm').style.display='none'; }
+
+// ════════════════════════════════════
+// バックアップ・復元
+// ════════════════════════════════════
+function openBackup() {
+  document.getElementById('backup-text').value=JSON.stringify(trades,null,2);
+  document.getElementById('modal-backup').style.display='flex';
+}
+function closeBackup() { document.getElementById('modal-backup').style.display='none'; }
+
+async function doCopy() {
+  const text=document.getElementById('backup-text').value;
+  try {
+    if(navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+    else { const ta=document.createElement('textarea'); ta.value=text; ta.style.cssText='position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+    const btn=document.getElementById('copy-btn');
+    btn.textContent='✓ コピー済み！'; btn.style.background='#1a4a2a';
+    setTimeout(()=>{ btn.textContent='コピーする'; btn.style.background='var(--blue)'; },2500);
+  } catch(e){ alert('コピーに失敗しました。テキストを手動で選択してコピーしてください。'); }
+}
+
+function openRestore() {
+  document.getElementById('restore-text').value='';
+  document.getElementById('restore-err').style.display='none';
+  document.getElementById('restore-btn').style.background='#1a3a2a';
+  document.getElementById('restore-btn').style.cursor='default';
+  document.getElementById('modal-restore').style.display='flex';
+}
+function closeRestore() { document.getElementById('modal-restore').style.display='none'; }
+
+function onRestoreInput() {
+  const val=document.getElementById('restore-text').value.trim();
+  const btn=document.getElementById('restore-btn');
+  btn.style.background=val?'var(--green)':'#1a3a2a';
+  btn.style.cursor=val?'pointer':'default';
+  document.getElementById('restore-err').style.display='none';
+}
+
+function doRestore() {
+  const val=document.getElementById('restore-text').value.trim();
+  if(!val) return;
+  try {
+    const parsed=JSON.parse(val);
+    if(!Array.isArray(parsed)) throw new Error();
+    trades=parsed; save(); closeRestore();
+    renderList(); if(currentMainTab==='pf') renderPortfolio();
+  } catch(e) {
+    const errEl=document.getElementById('restore-err');
+    errEl.textContent='JSONの解析に失敗しました。コピーしたデータをそのまま貼り付けてください。';
+    errEl.style.display='block'; errEl.style.padding='8px 14px';
+  }
+}
+
+
+// ════════════════════════════════════
+// パイチャート ツールチップ
+// ════════════════════════════════════
+function pieHover(el, event, label, color) {
+  el.style.opacity = '0.8';
+  const tip = document.getElementById('pie-tooltip');
+  document.getElementById('pie-tip-dot').style.background = color;
+  document.getElementById('pie-tip-text').textContent = label;
+  tip.style.display = 'block';
+  pieMove(event);
+}
+function pieMove(event) {
+  const tip = document.getElementById('pie-tooltip');
+  if (tip.style.display === 'none') return;
+  const x = (event.touches ? event.touches[0].clientX : event.clientX);
+  const y = (event.touches ? event.touches[0].clientY : event.clientY);
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  tip.style.left = (x + 14 + tw > vw ? x - tw - 10 : x + 14) + 'px';
+  tip.style.top  = (y + 14 + th > vh ? y - th - 10 : y + 14) + 'px';
+}
+function pieOut(el) {
+  el.style.opacity = '1';
+  document.getElementById('pie-tooltip').style.display = 'none';
+}
+function pieTouch(el, event, label, color) {
+  event.preventDefault();
+  pieHover(el, event, label, color);
+  setTimeout(() => pieOut(el), 2000);
+}
+// ════════════════════════════════════
+// ユーティリティ
+// ════════════════════════════════════
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ════════════════════════════════════
+// 初期化
+// ════════════════════════════════════
+load();
+renderList();
+</script>
+</body>
+</html>
